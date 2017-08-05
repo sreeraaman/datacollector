@@ -124,6 +124,15 @@ public class PushHttpReceiver implements HttpReceiver {
 
     // parse request into records
     List<Record> records = new ArrayList<>();
+
+    //begin fix for obtaining custom query parameters.
+    Map<String,Object> httpQueryParams = new HashMap<>();
+    req.getParameterMap().entrySet().forEach(entry ->{
+      httpQueryParams.put(entry.getKey(),String.join(",",entry.getValue()));
+    });
+    //end extraction of query parameters from http request.
+
+
     String requestId = System.currentTimeMillis() + "." + counter.getAndIncrement();
     try (DataParser parser = getParserFactory().getParser(requestId, is, "0")) {
       Record record = parser.parse();
@@ -137,6 +146,9 @@ public class PushHttpReceiver implements HttpReceiver {
 
     // dispatch records to batch
     for (Record record : records) {
+      //push the http query parameters in every record header.
+      record.getHeader().setAllAttributes(httpQueryParams);
+      //end push http query parameters in every record header.	
       batchContext.getBatchMaker().addRecord(record);
     }
 
